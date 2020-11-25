@@ -15,7 +15,7 @@ def filterInput(file_input):
         temp[1] = temp[0:2]
         temp.pop(0)
         listItem += [temp]
-    print(listItem)
+    # print(listItem)
     return pos,soDonHang,soNhanVien,listItem
 
 # ============================================================
@@ -23,29 +23,31 @@ def filterInput(file_input):
 # use generic algorithm
 
 class algorithmMultiTravelUseGeneticAlgorithm:
-    def __init__(depart, numItem, numTraveler, listItem):
+    def __init__(self, depart, numItem, numTraveler, listItem):
         self.listItem = listItem
         self.depart = depart
         self.numItem = numItem
         self.numTraveler = numTraveler
-
         self.nPopulation = 25
+        mutationRate = 0.05
+        numLoop = 1500
+        count = 0
 
-        populationList = InitPopulation(soDonHang, soNhanVien, nPopulation)
-
-        foundTarget = False
-        while not foundTarget:
+        populationList = self.InitPopulation(numItem, numTraveler, self.nPopulation)
+        
+        while True:
             #  tạo mating pool
-            matingPool, maxIndex = CreateMatingPool(populationList)
+            matingPool, maxIndex = self.CreateMatingPool(populationList)
             
             # lấy 2 phần tử dựa vào mating pool
-            p1 = population[matingPool[random.randint(0, len(matingPool))]]
-            p2 = population[matingPool[random.randint(0, len(matingPool))]]
+            print(matingPool)
+            p1 = populationList[matingPool[random.randint(0, len(matingPool)-1)]]
+            p2 = populationList[matingPool[random.randint(0, len(matingPool)-1)]]
             while p1 == p2:
-                p2 = population[matingPool[random.randint(0, len(matingPool))]]
+                p2 = populationList[matingPool[random.randint(0, len(matingPool)-1)]]
 
             # ngẫu nhiên tìm điểm cắt
-            splitPoint = random.randint(soDonHang)
+            splitPoint = random.randint(0,self.numItem-1)
             
             # lai tạo để tạo ra phần tử mới
             newDNA = self.crossOver(p1, p2, splitPoint)
@@ -54,19 +56,31 @@ class algorithmMultiTravelUseGeneticAlgorithm:
             self.mutate(newDNA, mutationRate)
             
             # thay thế phần tử cũ
-            population[maxIndex] = newDNA
+            populationList[maxIndex] = newDNA
             
             # kiểm tra điều kiện dừng
-            if (newDNA.fitness() < anpha)
-                foundTarget = true
+            count += 1
+            if (count > numLoop):
+                break
         
-        listRes = newDNA
+        finessList = [self.fitness(x) for x in populationList]
+        minFitness = min(finessList)
+        minIndex = finessList.index(minFitness)
+        ADNRes = populationList[minIndex]
+        self.resList = ADNRes.chromosome[:ADNRes.splitTravel[0]]
+        ADNRes.splitTravel += [self.numItem]
+        for i in range(1, self.numItem):
+            self.resList += [ADNRes.chromosome[ADNRes.splitTravel[i]:ADNRes.splitTravel[i+1]]]
+
 
     def InitPopulation(self, soDonHang, soNhanVien, nPopulation):
         res = []
         temp = [i for i in range(soDonHang)]
         for i in range(nPopulation):
-            res += DNA(random.shuffle(temp),generateSplitTravel())
+            random.shuffle(temp)
+            b = self.generateSplitTravel()
+            res += [DNA(temp, b)]
+            # print(temp, b)
         return res
 
 
@@ -79,39 +93,39 @@ class algorithmMultiTravelUseGeneticAlgorithm:
         return res
 
 
-    def CreateMatingPool(populationList):
+    def CreateMatingPool(self, populationList):
         finessList = [self.fitness(x) for x in populationList]
         maxFitness = max(finessList)
         maxIndex = finessList.index(maxFitness)
         res = []
         for i in range(self.nPopulation):
-            for loop in range(int((maxFitness-finessList[i])/maxFitness*25))
+            for loop in range(int((maxFitness-finessList[i])/maxFitness*25)):
                 res += [i]
         return res, maxIndex
 
 
 
-    def distance(, pos1, pos2):
+    def distance(self, pos1, pos2):
         return math.sqrt((pos1[0]-pos2[0])**2 + (pos1[1]-pos2[1])**2)
 
     def fitness(self, DNAtoCalculate):
-        f = [fitnessEachTraveler(DNAtoCalculate.chromosome[0:DNAtoCalculate.splitTravel[0]])]
+        f = [self.fitnessEachTraveler(DNAtoCalculate.chromosome[0:DNAtoCalculate.splitTravel[0]])]
         for i in range(self.numTraveler-2):
-            f += [fitnessEachTraveler(DNAtoCalculate.chromosome[DNAtoCalculate.splitTravel[i]:DNAtoCalculate.splitTravel[i+1]])]
-        f += [fitnessEachTraveler(DNAtoCalculate.chromosome[DNAtoCalculate.splitTravel[-1]:])]
+            f += [self.fitnessEachTraveler(DNAtoCalculate.chromosome[DNAtoCalculate.splitTravel[i]:DNAtoCalculate.splitTravel[i+1]])]
+        f += [self.fitnessEachTraveler(DNAtoCalculate.chromosome[DNAtoCalculate.splitTravel[-1]:])]
         res = 0
         for i in range(self.numTraveler):
             for j in range(self.numTraveler):
-                res += abs(res[i]-res[j])
+                res += abs(f[i]-f[j])
         return res
 
     def fitnessEachTraveler(self, iTem):
-        res = (5 + iTem[0][1]+ 2*iTem[0][2]) - (distance(self.depart, self.listItem[iTem[0]][0])/40*20+10)
-        for i in range(len(citylist) - 1):
-            res += (5 + iTem[i+1][1]+ 2*iTem[i+1][2]) - (distance(self.listItem[iTem[i]][0], self.listItem[iTem[i+1]][0])/40*20+10)
+        res = (5 + self.listItem[iTem[0]][1]+ 2*self.listItem[iTem[0]][2]) - (self.distance(self.depart, self.listItem[iTem[0]][0])/40*20+10)
+        for i in range(len(iTem) - 1):
+            res += (5 + self.listItem[iTem[i+1]][1]+ 2*self.listItem[iTem[i+1]][2]) - (self.distance(self.listItem[iTem[i]][0], self.listItem[iTem[i+1]][0])/40*20+10)
         return res
 
-    def CrossOver(self, p1, p2, splitPoint):
+    def crossOver(self, p1, p2, splitPoint):
         chro1 = p1.chromosome[:]
         chro2 = p2.chromosome[:]
         res = []
@@ -121,8 +135,10 @@ class algorithmMultiTravelUseGeneticAlgorithm:
             res += [splitPoint]
             chro1.remove(splitPoint)
             chro2.remove(splitPoint)
-            pA = pA%(len(chro1)
-            pB = pB%(len(chro1)
+            if not chro1:
+                break
+            pA = pA%(len(chro1))
+            pB = pB%(len(chro2))
             if (self.distance(self.listItem[splitPoint][0], self.listItem[chro1[pB]][0]) > self.distance(self.listItem[splitPoint][0], self.listItem[chro1[pA]][0])):
                 splitPoint = chro2[pB]
             else:
@@ -130,7 +146,7 @@ class algorithmMultiTravelUseGeneticAlgorithm:
         
         splitTravel = p1.splitTravel[:]
         newDNA = DNA(res, splitTravel)
-        updateSplit = random(0,self.numTraveler)
+        updateSplit = random.randint(0,self.numTraveler-2)
 
         minNewDNAFitness = self.fitness(newDNA)
         minValue = splitTravel[updateSplit]
@@ -139,7 +155,7 @@ class algorithmMultiTravelUseGeneticAlgorithm:
             begin = splitTravel[updateSplit-1] + 2
         else:
             begin = 1
-        if updateSplit < self.numTraveler-1:
+        if updateSplit < self.numTraveler-2:
             end = splitTravel[updateSplit+1] -2
         else:
             end = self.numItem -1
@@ -163,13 +179,14 @@ class algorithmMultiTravelUseGeneticAlgorithm:
             end = random.randint(begin+1, self.numItem -1)
             tempChro[begin:end] = reversed(tempChro[begin:end])
             newDNA.splitTravel = self.generateSplitTravel()
+
     def result(self):
-        return listRes
+        return self.resList
 
 class DNA:
-    __init__ (self, chromosome, splitTravel):
-        self.chromosome = chromosome
-        self.splitTravel = splitTravel     
+    def __init__ (self, chromosome, splitTravel):
+        self.chromosome = chromosome[:]
+        self.splitTravel = splitTravel[:]     
 
     
 # ============================================================
@@ -194,6 +211,7 @@ def assign(file_input, file_output):
     pos, soDonHang, soNhanVien, listItem = filterInput(file_input)
     # run algorithm
     res = algorithmMultiTravelUseGeneticAlgorithm(pos,soDonHang, soNhanVien,listItem)
+    print(res.result())
     # write output
     # writeOut(res, file_output)
     return
