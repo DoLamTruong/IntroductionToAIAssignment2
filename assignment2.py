@@ -28,9 +28,9 @@ class algorithmMultiTravelUseGeneticAlgorithm:
         self.depart = depart
         self.numItem = numItem
         self.numTraveler = numTraveler
-        self.nPopulation = 25
-        mutationRate = 0.05
-        numLoop = 1500
+        self.nPopulation = 35
+        mutationRate = 0.15
+        numLoop = 3500
         count = 0
 
         populationList = self.InitPopulation(numItem, numTraveler, self.nPopulation)
@@ -40,8 +40,14 @@ class algorithmMultiTravelUseGeneticAlgorithm:
             matingPool, maxIndex = self.CreateMatingPool(populationList)
             
             # lấy 2 phần tử dựa vào mating pool
-            print(matingPool)
-            p1 = populationList[matingPool[random.randint(0, len(matingPool)-1)]]
+            # print(matingPool)
+            if not matingPool:
+                # temp = self.InitPopulation(numItem, numTraveler, self.nPopulation)
+                # populationList[0:int(self.nPopulation/2)] = temp[0:int(self.nPopulation/2)]
+                # continue
+                break
+            index = matingPool[random.randint(0, len(matingPool)-1)]
+            p1 = populationList[index]
             p2 = populationList[matingPool[random.randint(0, len(matingPool)-1)]]
             while p1 == p2:
                 p2 = populationList[matingPool[random.randint(0, len(matingPool)-1)]]
@@ -58,18 +64,21 @@ class algorithmMultiTravelUseGeneticAlgorithm:
             # thay thế phần tử cũ
             populationList[maxIndex] = newDNA
             
+            # ADNRes, minFitness = self.minADN(populationList)
+            # print(self.fitness(ADNRes), ADNRes.chromosome, ADNRes.splitTravel, "===============")
+            # for i in populationList:
+            #     print(self.fitness(i), i.chromosome, i.splitTravel)
+            # print("===============================================")
+
             # kiểm tra điều kiện dừng
             count += 1
             if (count > numLoop):
                 break
         
-        finessList = [self.fitness(x) for x in populationList]
-        minFitness = min(finessList)
-        minIndex = finessList.index(minFitness)
-        ADNRes = populationList[minIndex]
-        self.resList = ADNRes.chromosome[:ADNRes.splitTravel[0]]
+        ADNRes, minFitness = self.minADN(populationList)
+        self.resList = [ADNRes.chromosome[:ADNRes.splitTravel[0]]]
         ADNRes.splitTravel += [self.numItem]
-        for i in range(1, self.numItem):
+        for i in range(0, self.numTraveler-1):
             self.resList += [ADNRes.chromosome[ADNRes.splitTravel[i]:ADNRes.splitTravel[i+1]]]
 
 
@@ -85,11 +94,12 @@ class algorithmMultiTravelUseGeneticAlgorithm:
 
 
     def generateSplitTravel(self):
-        interval = int(self.numItem / self.numTraveler)
-        randAdd = random.randint(-int(interval/2),int(interval/2))
+        interval = self.numItem*1.0 / self.numTraveler
+        # int(random.uniform(0,interval/2)+interval)
         res = []
         for i in range(1, self.numTraveler):
-            res.append(interval*i + randAdd)
+            # randAdd = random.uniform(-interval/2,interval/2)
+            res.append(round(interval*i))
         return res
 
 
@@ -98,15 +108,31 @@ class algorithmMultiTravelUseGeneticAlgorithm:
         maxFitness = max(finessList)
         maxIndex = finessList.index(maxFitness)
         res = []
+        temp = []
         for i in range(self.nPopulation):
-            for loop in range(int((maxFitness-finessList[i])/maxFitness*25)):
-                res += [i]
+            # for loop in range(int((maxFitness*1.0-finessList[i])/maxFitness*25)):
+                # res += [i]
+            temp = int((maxFitness*1.0-finessList[i])/maxFitness*25)
+            res += [i for lo in range(temp)]
+            # res += [ i for loop in range(temp)]
+            # print(res)
+        # print(temp)
+        # for i in range(self.nPopulation):
+        #     res += [i for lo in range(temp[i])]
+        # print(len(res))
+        if not res:
+            for i in range(self.nPopulation):
+            # for loop in range(int((maxFitness*1.0-finessList[i])/maxFitness*25)):
+                # res += [i]
+                temp = int((maxFitness*1.0-finessList[i])/maxFitness*50)
+                res += [i for lo in range(temp)]
+            # print(res)
         return res, maxIndex
 
 
 
     def distance(self, pos1, pos2):
-        return math.sqrt((pos1[0]-pos2[0])**2 + (pos1[1]-pos2[1])**2)
+        return math.sqrt((pos1[0]-pos2[0]*1.0)**2 + (pos1[1]-pos2[1])**2)
 
     def fitness(self, DNAtoCalculate):
         f = [self.fitnessEachTraveler(DNAtoCalculate.chromosome[0:DNAtoCalculate.splitTravel[0]])]
@@ -120,10 +146,17 @@ class algorithmMultiTravelUseGeneticAlgorithm:
         return res
 
     def fitnessEachTraveler(self, iTem):
-        res = (5 + self.listItem[iTem[0]][1]+ 2*self.listItem[iTem[0]][2]) - (self.distance(self.depart, self.listItem[iTem[0]][0])/40*20+10)
+        # doanh thu
+        doanhthu = 0
+        for i in range(len(iTem)):
+            doanhthu += (5 + self.listItem[iTem[i]][1]+ 2*self.listItem[iTem[i]][2])
+        # Chi phi
+        quangduong = self.distance(self.depart, self.listItem[iTem[0]][0])
         for i in range(len(iTem) - 1):
-            res += (5 + self.listItem[iTem[i+1]][1]+ 2*self.listItem[iTem[i+1]][2]) - (self.distance(self.listItem[iTem[i]][0], self.listItem[iTem[i+1]][0])/40*20+10)
-        return res
+            quangduong += self.distance(self.listItem[iTem[i]][0], self.listItem[iTem[i+1]][0])
+        chiphi = quangduong/40.0*20+10
+        f = doanhthu - chiphi
+        return f
 
     def crossOver(self, p1, p2, splitPoint):
         chro1 = p1.chromosome[:]
@@ -179,7 +212,12 @@ class algorithmMultiTravelUseGeneticAlgorithm:
             end = random.randint(begin+1, self.numItem -1)
             tempChro[begin:end] = reversed(tempChro[begin:end])
             newDNA.splitTravel = self.generateSplitTravel()
-
+    def minADN(self, populationList):
+        finessList = [self.fitness(x) for x in populationList]
+        minFitness = min(finessList)
+        minIndex = finessList.index(minFitness)
+        ADNRes = populationList[minIndex]
+        return ADNRes, minFitness
     def result(self):
         return self.resList
 
@@ -211,9 +249,10 @@ def assign(file_input, file_output):
     pos, soDonHang, soNhanVien, listItem = filterInput(file_input)
     # run algorithm
     res = algorithmMultiTravelUseGeneticAlgorithm(pos,soDonHang, soNhanVien,listItem)
-    print(res.result())
+    # print(res.result())
     # write output
-    # writeOut(res, file_output)
+    wri = res.result()
+    writeOut(res.result(), file_output)
     return
 
 
